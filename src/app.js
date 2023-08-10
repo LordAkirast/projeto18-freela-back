@@ -24,6 +24,8 @@ const createdAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 app.post('/signup', async (req,res) => {
     const {name, email, password, confirmPassword} = req.body
 
+    console.log('SUCCESS ON ENTERING')
+
     try {
         
         const validation = createUser.validate({ name, email, password }, { abortEarly: false });
