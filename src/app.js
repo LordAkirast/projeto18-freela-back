@@ -24,12 +24,13 @@ const loginUser = Joi.object({
 });
 
 const createService = Joi.object({
-    creator: Joi.string().email().required(),
+    creator: Joi.string().required(),
     serviceName: Joi.string().required(),
     serviceDescription: Joi.string().required(),
-    category: Joi.string().required(),
-    price: Joi.string().required(),
-    deadline: Joi.string().required(),
+    serviceCategory: Joi.string().required(),
+    servicePrice: Joi.string().required(),
+    serviceDeadline: Joi.string().required(),
+    creatorEmail: Joi.string().email().required(),
 });
 
 /// adicionar para o usuario uma coluna de avaliação
@@ -118,20 +119,22 @@ app.post("/login", async (req, res) => {
 })
 
 app.post("/services", async (req, res) => {
+    
+    const { creator, creatorEmail, serviceName, serviceCategory, serviceDeadline, serviceDescription, servicePrice, token } = req.body
+    console.log("entrou - services")
+
     if (!token) {
         return res.status(403).send('ERROR UNAUTHORIZED: TOKEN IS REQUIRED!')
     }
-    const { creator ,serviceName, category, deadline, serviceDescription, price } = req.body
-    console.log("entrou - services")
 
-    const validation = createService.validate({ serviceName, category, deadline, serviceDescription, price }, { abortEarly: "False" })
+    const validation = createService.validate({ creator, creatorEmail, serviceName, serviceCategory, serviceDeadline, serviceDescription, servicePrice }, { abortEarly: "False" })
     if (validation.error) {
         console.log("error 1 - services")
         const errors = validation.error.details.map((detail) => detail.message)
         return res.status(422).send(errors);
     }
 
-    const users = await db.query('SELECT * FROM USERS WHERE EMAIL = $1;', [creator])
+    const users = await db.query('SELECT * FROM USERS WHERE EMAIL = $1;', [creatorEmail])
     if (users.rows.length < 1) {
         console.log("error 2 - user not found!")
         return res.status(404).send("You need to sign-in in order to create a service. Use command 'login' to sign-in or 'signup' to create an account.");
@@ -139,11 +142,11 @@ app.post("/services", async (req, res) => {
 
     try {
         const isActive = true;
-        const services = await db.query('INSERT INTO SERVICES (creator ,"serviceName", "serviceDescription", category, deadline, price, "createdAt", "isActive") values ($1, $2, $3, $4, $5, $6, $7, $8);', [creator, serviceName, serviceDescription, category, deadline, price, createdAt, isActive]);
+        const services = await db.query('INSERT INTO SERVICES (creator ,serviceName, serviceDescription, category, price, createdAt, isActive, creatorEmail, deadline) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);', [creator, serviceName, serviceDescription, serviceCategory, servicePrice, createdAt, isActive, creatorEmail, serviceDeadline]);
         console.log('SERVICE CREATED!')
         return res.status(201).send('Service created!');
     
-    } catch (error) {
+    } catch (err) {
         return res.status(500).send(err.message);
         
     }
