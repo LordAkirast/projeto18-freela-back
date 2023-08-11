@@ -41,6 +41,7 @@ const createdAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
 app.post('/signup', async (req, res) => {
     const { name, email, password, confirmPassword } = req.body
+    const lowerCaseemail = email.toLowerCase();
 
     console.log('SUCCESS ON ENTERING')
 
@@ -63,7 +64,7 @@ app.post('/signup', async (req, res) => {
         if (userVerify.rows.length > 0) {
             return res.status(409).send('There is an user already with this email!');
         } else {
-            const user = await db.query('INSERT INTO USERS (name, email, password, "createdat") values ($1, $2, $3, $4);', [name, email, passCrypt, createdAt]);
+            const user = await db.query('INSERT INTO USERS (name, email, password, "createdat") values ($1, $2, $3, $4);', [name, lowerCaseemail, passCrypt, createdAt]);
             console.log('USER CREATED!')
             return res.status(201).send('User created!');
         }
@@ -75,6 +76,7 @@ app.post('/signup', async (req, res) => {
 
 app.post("/login", async (req, res) => {
     const { email, password } = req.body
+    const lowerCaseemail = email.toLowerCase();
 
     console.log("entrou - login")
 
@@ -85,7 +87,7 @@ app.post("/login", async (req, res) => {
         return res.status(422).send(errors);
     }
 
-    const users = await db.query('SELECT * FROM USERS WHERE EMAIL = $1;', [email])
+    const users = await db.query('SELECT * FROM USERS WHERE EMAIL = $1;', [lowerCaseemail])
     if (users.rows.length < 1) {
         console.log("error 2 - user not found!")
         return res.status(404).send("There is no user with this email registered.");
@@ -166,6 +168,36 @@ app.get("/services", async (req,res) => {
 
     try {
         const services = await db.query('SELECT * FROM SERVICES WHERE isActive = $1', [true])
+        return res.status(200).send(services.rows)
+    } catch (err) {
+        return res.status(500).send(err.message)
+        
+    }
+    
+})
+
+app.get("/services/:creatorEmail", async (req,res) => {
+
+    const {creatorEmail} = req.params
+
+
+    try {
+        const services = await db.query('SELECT * FROM SERVICES WHERE creatorEmail = $1', [creatorEmail])
+        return res.status(200).send(services.rows)
+    } catch (err) {
+        return res.status(500).send(err.message)
+        
+    }
+    
+})
+
+app.get("/services/:creator", async (req,res) => {
+
+    const {creator} = req.params
+
+
+    try {
+        const services = await db.query('SELECT * FROM SERVICES WHERE creator = $1', [creator])
         return res.status(200).send(services.rows)
     } catch (err) {
         return res.status(500).send(err.message)
