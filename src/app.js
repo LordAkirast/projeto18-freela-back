@@ -121,7 +121,7 @@ app.post("/login", async (req, res) => {
 })
 
 app.post("/services", async (req, res) => {
-    
+
     const { creator, creatorEmail, serviceName, serviceCategory, serviceDeadline, serviceDescription, servicePrice, token } = req.body
     console.log("entrou - services")
 
@@ -132,11 +132,11 @@ app.post("/services", async (req, res) => {
     if (isNaN(serviceDeadline)) {
         return res.status(400).send('DEADLINE NEEDS TO BE AN INTEGER. EX: 1, 2, 3, 4, 5...');
     }
-    
+
     if (isNaN(servicePrice)) {
         return res.status(400).send('PRICE NEEDS TO BE A NUMERIC. EX: 45.00 | 32.45');
     }
-    
+
 
     const validation = createService.validate({ creator, creatorEmail, serviceName, serviceCategory, serviceDeadline, serviceDescription, servicePrice }, { abortEarly: "False" })
     if (validation.error) {
@@ -156,14 +156,14 @@ app.post("/services", async (req, res) => {
         const services = await db.query('INSERT INTO SERVICES (creator ,serviceName, serviceDescription, category, price, createdAt, isActive, creatorEmail, deadline) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);', [creator, serviceName, serviceDescription, serviceCategory, servicePrice, createdAt, isActive, creatorEmail, serviceDeadline]);
         console.log('SERVICE CREATED!')
         return res.status(201).send('Service created!');
-    
+
     } catch (err) {
         return res.status(500).send(err.message);
-        
+
     }
 })
 
-app.get("/services", async (req,res) => {
+app.get("/services", async (req, res) => {
 
 
     try {
@@ -171,14 +171,14 @@ app.get("/services", async (req,res) => {
         return res.status(200).send(services.rows)
     } catch (err) {
         return res.status(500).send(err.message)
-        
+
     }
-    
+
 })
 
-app.get("/services/:creatorEmail", async (req,res) => {
+app.get("/services/:creatorEmail", async (req, res) => {
 
-    const {creatorEmail} = req.params
+    const { creatorEmail } = req.params
 
 
     try {
@@ -186,24 +186,36 @@ app.get("/services/:creatorEmail", async (req,res) => {
         return res.status(200).send(services.rows)
     } catch (err) {
         return res.status(500).send(err.message)
-        
+
     }
-    
+
 })
 
-app.get("/services/:creator", async (req,res) => {
+app.get("/services/user/:creator", async (req, res) => {
 
-    const {creator} = req.params
+    const { creator } = req.params
+
+    console.log('entrou creator')
 
 
     try {
         const services = await db.query('SELECT * FROM SERVICES WHERE creator = $1', [creator])
-        return res.status(200).send(services.rows)
+        if (services.rows < 1) {
+            const userExists = await db.query('SELECT * FROM USERS WHERE name = $1;', [creator])
+            if (userExists.rows < 1) {
+                return res.status(404).send([`USER ${creator} DOES NOT EXISTS!`]);
+
+            } else {
+                return res.status(200).send(['USER DOES NOT HAVE ANY SERVICES'])
+            }
+        } else {
+            return res.status(200).send(services.rows)
+        }
     } catch (err) {
         return res.status(500).send(err.message)
-        
+
     }
-    
+
 })
 
 
