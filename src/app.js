@@ -127,6 +127,15 @@ app.post("/services", async (req, res) => {
         return res.status(403).send('ERROR UNAUTHORIZED: TOKEN IS REQUIRED!')
     }
 
+    if (isNaN(serviceDeadline)) {
+        return res.status(400).send('DEADLINE NEEDS TO BE AN INTEGER. EX: 1, 2, 3, 4, 5...');
+    }
+    
+    if (isNaN(servicePrice)) {
+        return res.status(400).send('PRICE NEEDS TO BE A NUMERIC. EX: 45.00 | 32.45');
+    }
+    
+
     const validation = createService.validate({ creator, creatorEmail, serviceName, serviceCategory, serviceDeadline, serviceDescription, servicePrice }, { abortEarly: "False" })
     if (validation.error) {
         console.log("error 1 - services")
