@@ -161,6 +161,19 @@ app.post("/services", async (req, res) => {
     }
 })
 
+app.get("/services", async (req,res) => {
+
+
+    try {
+        const services = await db.query('SELECT * FROM SERVICES WHERE isActive = $1', [true])
+        return res.status(200).send(services.rows)
+    } catch (err) {
+        return res.status(500).send(err.message)
+        
+    }
+    
+})
+
 
 
 
