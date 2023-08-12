@@ -33,6 +33,17 @@ const createService = Joi.object({
     creatorEmail: Joi.string().email().required(),
 });
 
+
+const buyService = Joi.object({
+    buyer: Joi.string().required(),
+    seller: Joi.string().required(),
+    serviceId: Joi.number().integer().required(),
+    serviceQtd: Joi.number().integer().required(),
+    transactionPrice: Joi.number().required(),
+});
+
+
+
 /// adicionar para o usuario uma coluna de avaliação
 
 let token;
@@ -213,6 +224,61 @@ app.get("/services/user/:creator", async (req, res) => {
         }
     } catch (err) {
         return res.status(500).send(err.message)
+
+    }
+
+})
+
+app.post("/buy/:serviceId", async (req,res) => {
+
+    ///seller creator - services
+    /// transactionPrice - serviceQtd * servicePrice
+    const {serviceId} = req.params
+    const { buyer, serviceQtd, token } = req.body
+    console.log("entrou - buy")
+
+   
+
+    const services = await db.query('SELECT * FROM SERVICES WHERE id = $1 and isActive = $2;', [serviceId, true])
+    if (services.rows.length < 1) {
+        console.log("SERVICE NOT FOUND")
+        console.log("erro 5 - buy")
+        return res.status(404).send("SERVICE WITH ID " + serviceId + " NOT FOUND!");
+    }
+
+    const transactionPrice = serviceQtd * services.rows[0].price
+    const seller = services.rows[0].creator
+
+    if (!token) {
+        console.log("erro 1 - buy")
+        return res.status(403).send('ERROR UNAUTHORIZED: TOKEN IS REQUIRED!')
+    }
+
+    if (isNaN(serviceQtd)) {
+        console.log("erro 2 - buy")
+        return res.status(400).send('SERVICEQTD NEEDS TO BE AN INTEGER. EX: 1, 2, 3, 4, 5...');
+    }
+
+
+
+    const validation = buyService.validate({ buyer, seller, serviceId, serviceQtd, transactionPrice, }, { abortEarly: "False" })
+    if (validation.error) {
+        console.log("error 4 - buy service")
+        const errors = validation.error.details.map((detail) => detail.message)
+        return res.status(422).send(errors);
+    }
+
+    
+
+    try {
+        const transactionStatus = 'In progress'
+        const services = await db.query('INSERT INTO TRANSACTIONS (buyer, seller, serviceId, serviceQtd, transactionPrice, transactionStatus, token, createdAt) values ($1, $2, $3, $4, $5, $6, $7, $8);', [buyer, seller, serviceId, serviceQtd, transactionPrice, transactionStatus, token, createdAt]);
+        console.log('TRANSACTION COMPLETED!')
+        return res.status(201).send('TRANSACTION COMPLETED!');
+
+    } catch (err) {
+        console.log("erro 6 - buy")
+        return res.status(500).send(err.message);
 
     }
 
