@@ -119,6 +119,7 @@ app.post("/login", async (req, res) => {
     const profileData = {
         name: users.rows[0].name,
         email: users.rows[0].email,
+        earnings: users.rows[0].earnings,
         token,
     }
 
@@ -281,6 +282,10 @@ app.post("/buy/:serviceId", async (req,res) => {
         return res.status(500).send(err.message);
 
     }
+
+})
+
+app.get("/earnings", (req,res) => {
 
 })
 
