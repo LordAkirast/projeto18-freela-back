@@ -230,15 +230,15 @@ app.get("/services/user/:creator", async (req, res) => {
 
 })
 
-app.post("/buy/:serviceId", async (req,res) => {
+app.post("services/buy/:serviceId", async (req, res) => {
 
     ///seller creator - services
     /// transactionPrice - serviceQtd * servicePrice
-    const {serviceId} = req.params
+    const { serviceId } = req.params
     const { buyer, serviceQtd, token } = req.body
     console.log("entrou - buy")
 
-   
+
 
     const services = await db.query('SELECT * FROM SERVICES WHERE id = $1 and isActive = $2;', [serviceId, true])
     if (services.rows.length < 1) {
@@ -269,7 +269,7 @@ app.post("/buy/:serviceId", async (req,res) => {
         return res.status(422).send(errors);
     }
 
-    
+
 
     try {
         const transactionStatus = 'In progress'
@@ -285,7 +285,31 @@ app.post("/buy/:serviceId", async (req,res) => {
 
 })
 
-app.get("/earnings", (req,res) => {
+app.post("/services/deliver/:serviceId", async (req, res) => {
+
+    const { serviceId } = req.params
+
+    try {
+        const verifyId = await db.query('SELECT * FROM TRANSACTIONS WHERE serviceId = $1 and transactionStatus = $2;', [serviceId, 'In progress'])
+        if (verifyId.rows.length < 1) {
+            return res.status(404).send('THERE IS NO SERVICE TO DELIVER WITH THIS ID.')
+        }
+
+        console.log(verifyId.rows[0].transactionprice)
+
+        console.log(verifyId.rows[0].seller)
+        const seller = verifyId.rows[0].seller
+        const prevEarnings = await db.query('SELECT * FROM USERS WHERE name = $1;', [verifyId.rows[0].seller])
+
+        const income = Number(verifyId.rows[0].transactionprice + prevEarnings.rows[0].earnings)
+        console.log(income)
+        const transaction = await db.query('UPDATE TRANSACTIONS SET transactionStatus = $1 where serviceId = $2;', ['Delivered', serviceId])
+        await db.query('UPDATE USERS SET earnings = $1 where name = $2;', [income, seller])
+        return res.status(200).send('SERVICE DELIVERED!')
+    } catch (error) {
+        return res.status(500).send(error.message)
+
+    }
 
 })
 
