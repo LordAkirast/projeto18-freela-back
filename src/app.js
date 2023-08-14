@@ -313,6 +313,97 @@ app.post("/services/deliver/:serviceId", async (req, res) => {
 
 })
 
+app.post("/services/cancel/:serviceId", async (req, res) => {
+
+    const { serviceId } = req.params
+
+    const {buyer} = req.body
+
+    try {
+        const verifyId = await db.query('SELECT * FROM TRANSACTIONS WHERE serviceId = $1 and transactionStatus = $2 and buyer = $3;', [serviceId, 'In progress', buyer])
+        if (verifyId.rows.length < 1) {
+            return res.status(404).send('THERE IS NO SERVICE TO DELIVER WITH THIS ID.')
+        }
+
+        console.log(verifyId.rows[0].transactionprice)
+
+        console.log(verifyId.rows[0].seller)
+        const seller = verifyId.rows[0].seller
+        const prevEarnings = await db.query('SELECT * FROM USERS WHERE name = $1;', [verifyId.rows[0].seller])
+
+        const income = Number(prevEarnings.rows[0].earnings - verifyId.rows[0].transactionprice)
+        console.log(income)
+        const transaction = await db.query('UPDATE TRANSACTIONS SET transactionStatus = $1 where serviceId = $2;', ['Canceled', serviceId])
+        await db.query('UPDATE USERS SET earnings = $1 where name = $2;', [income, seller])
+        return res.status(200).send('SERVICE CANCELED!')
+    } catch (error) {
+        return res.status(500).send(error.message)
+
+    }
+
+})
+
+app.post("/services/deactivate/:serviceId", async (req, res) => {
+    const { serviceId } = req.params;
+    const { creatorEmail } = req.body;
+
+    console.log(creatorEmail, serviceId);
+
+    try {
+        const service = await db.query("SELECT * FROM SERVICES WHERE ID = $1 AND isActive = $2 AND creatorEmail = $3;", [serviceId, true, creatorEmail]);
+
+        console.log(service.rows);
+
+        if (service.rows.length > 0) {
+            try {
+                await db.query("UPDATE SERVICES SET isActive = $1 where ID = $2;", [false, serviceId]);
+                return res.status(200).send('SERVICE DEACTIVATED!');
+            } catch (err) {
+                return res.status(500).send(err.message);
+            }
+        } else {
+            return res.status(404).send('THERE IS NO ACTIVE SERVICE WITH THIS ID BELONGING TO YOU.');
+        }
+    } catch (error) {
+        return res.status(500).send(error.message);
+    }
+});
+
+
+app.post("/services/activate/:serviceId", async (req, res) => {
+    const { serviceId } = req.params;
+    const { creatorEmail } = req.body;
+
+    const service = await db.query("SELECT * FROM SERVICES WHERE ID = $1 AND isActive = $2 AND creatorEmail = $3;", [serviceId, false, creatorEmail]);
+    if (service.rows.length > 0) {
+        try {
+            await db.query("UPDATE SERVICES SET isActive = $1 where ID = $2;", [true, serviceId]);
+            return res.status(200).send('SERVICE ACTIVATED!');
+        } catch (err) {
+            return res.status(500).send(err.message);
+        }
+    } else {
+        return res.status(404).send('THERE IS NO INACTIVE SERVICE WITH THIS ID BELONGING TO YOU.');
+    }
+});
+
+app.get("/services/transactions/:name", async (req, res) => {
+    console.log('ENTROU NO ME')
+
+    const {name} = req.params
+
+    try {
+        const transactions = await db.query('SELECT * FROM TRANSACTIONS WHERE buyer = $1;', [name])
+        console.log('ENTROU try')
+        console.log(transactions.rows)
+        return res.status(200).send(transactions.rows)
+    } catch (err) {
+        return res.status(500).send(err.message)
+
+    }
+
+})
+
 
 
 
