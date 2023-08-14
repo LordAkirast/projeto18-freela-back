@@ -230,7 +230,7 @@ app.get("/services/user/:creator", async (req, res) => {
 
 })
 
-app.post("services/buy/:serviceId", async (req, res) => {
+app.post("/services/buy/:serviceId", async (req, res) => {
 
     ///seller creator - services
     /// transactionPrice - serviceQtd * servicePrice
